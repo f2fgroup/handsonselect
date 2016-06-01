@@ -209,11 +209,12 @@
      */
     Handsontable.Select2Validator = function(value, callback) {
         if (this.strict && this.options.data) {
-            // console.log(this);
-            value = value.trim();
-            for (var i = 0; i < this.options.data.length; i++) {
-                if (this.options.data[i] === value || this.options.data[i].id === value) {
-                    return callback(true);
+            if (value) {
+                value = value.trim();
+                for (var i = 0; i < this.options.data.length; i++) {
+                    if (this.options.data[i] === value || this.options.data[i].id === value) {
+                        return callback(true);
+                    }
                 }
             }
             callback(false);
