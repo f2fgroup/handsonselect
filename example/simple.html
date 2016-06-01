@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+    integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="http://handsontable.com/dist/handsontable.full.css">
+  <link type="text/css" rel="stylesheet" href="../dist/handsonselect.min.css">
+  <script src="http://handsontable.com/dist/handsontable.full.js"></script>
+  <script src="http://code.jquery.com/jquery-2.2.4.min.js"></script>
+  <script src="../dist/handsonselect.js"></script>
+</head>
+
+<body style="padding: 30px;">
+  <div id="example1"></div>
+  <script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function() {
+    var container = document.getElementById("example1");
+    hot = new Handsontable(container, {
+      data: [
+        ['2014', 'Nissan', 10],
+        ['2015', 'h', 20],
+        ['2016', 'k', 30]
+      ],
+      colHeaders: true,
+      columns: [
+        {},
+        {
+          strict: true,
+          type: 'select2',
+          options: {
+            // these options are the select2 initialization options
+            data: [
+              {
+                id: 'k',
+                text: 'Kia'
+              }, {
+                id: 'n',
+                text: 'Nissan'
+              }, {
+                id:'t',
+                text: 'Toyota'
+              }, {
+                id: 'h',
+                text: 'Honda'
+              }
+            ]
+          }
+        },
+        {}
+      ]
+    });
+  });
+  </script>
+</body>
+
+</html>

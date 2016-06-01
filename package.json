@@ -1,0 +1,30 @@
+{
+  "name": "handsonSelect",
+  "version": "1.0.0",
+  "description": "Handsontable customisable select component",
+  "main": "./dist/handsonselect.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/f2fgroup/handsonSelect.git"
+  },
+  "keywords": [
+    "handsontable",
+    "select2"
+  ],
+  "author": "Ioan CHIRIAC",
+  "license": "GPL v3",
+  "bugs": {
+    "url": "https://github.com/f2fgroup/handsonSelect/issues"
+  },
+  "homepage": "https://github.com/f2fgroup/handsonSelect",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-cssmin": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-uglify": "^1.0.1",
+    "grunt-contrib-watch": "^1.0.0"
+  }
+}

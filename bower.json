@@ -1,0 +1,28 @@
+{
+  "name": "handsonSelect",
+  "version": "1.0.0",
+  "homepage": "https://github.com/f2fgroup/handsonSelect",
+  "authors": [
+    "Ioan CHIRIAC"
+  ],
+  "description": "Handsontable customisable select component",
+  "main": "./dist/handsonselect.js, ./dist/handsonselect.css",
+  "moduleType": [
+    "amd"
+  ],
+  "keywords": [
+    "handsontable",
+    "select2"
+  ],
+  "license": "GNU GPL v3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "select2": "~4.0.3"
+  }
+}
