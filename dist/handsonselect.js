@@ -179,9 +179,11 @@
     "use strict";
     function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
         if (cellProperties.options && cellProperties.options.data && value) {
-            value = value.trim();
+            if (typeof value === "string") {
+                value = value.trim();
+            }
             for (var i = 0; i < cellProperties.options.data.length; i++) {
-                if (cellProperties.options.data[i].id === value) {
+                if (cellProperties.options.data[i].id == value) {
                     if (typeof cellProperties.options.templateSelection === "function") {
                         value = cellProperties.options.templateSelection(cellProperties.options[i], TD);
                     } else {
@@ -210,11 +212,13 @@
     Handsontable.Select2Validator = function(value, callback) {
         if (this.strict && this.options.data) {
             if (value) {
-                value = value.trim();
+                if (typeof value === "string") {
+                    value = value.trim();
+                }
                 for (var i = 0; i < this.options.data.length; i++) {
-                    if (this.options.data[i] === value || this.options.data[i].id === value) {
+                    if (this.options.data[i] == value || this.options.data[i].id == value) {
                         return callback(true);
-                    } else if (this.options.data[i].text === value) {
+                    } else if (this.options.data[i].text == value) {
                         return callback(true);
                     }
                 }

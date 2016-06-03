@@ -12,11 +12,13 @@
     Handsontable.Select2Validator = function(value, callback) {
       if (this.strict && this.options.data) {
         if (value) {
-          value = value.trim();
+          if (typeof value === "string") {
+            value = value.trim();
+          }
           for(var i = 0; i <  this.options.data.length; i++) {
-            if (this.options.data[i] === value || this.options.data[i].id === value) {
+            if (this.options.data[i] == value || this.options.data[i].id == value) {
               return callback(true);
-            } else if (this.options.data[i].text === value) {
+            } else if (this.options.data[i].text == value) {
               return callback(true);
             }
           }
