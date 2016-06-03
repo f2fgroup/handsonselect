@@ -178,7 +178,7 @@
 (function(Handsontable) {
     "use strict";
     function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
-        if (cellProperties.options && cellProperties.options.data && value !== null) {
+        if (cellProperties.options && cellProperties.options.data && value) {
             value = value.trim();
             for (var i = 0; i < cellProperties.options.data.length; i++) {
                 if (cellProperties.options.data[i].id === value) {
