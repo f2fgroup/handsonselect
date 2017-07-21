@@ -10,7 +10,7 @@
      * @param {Function} callback - Callback called with validation result
      */
     Handsontable.Select2Validator = function(value, callback) {
-      if (this.strict && this.options.data) {
+      if (this.options.data) {
         if (value) {
           if (typeof value === "string") {
             value = value.trim();

@@ -13,11 +13,11 @@ module.exports = function(grunt) {
         },
         files: {
           'dist/handsonselect.js': [
+            'bower_components/select2/dist/js/select2.full.js',
             'src/editor.js',
             'src/renderer.js',
             'src/validator.js',
-            'src/main.js',
-            'bower_components/select2/dist/js/select2.full.js'
+            'src/main.js'
           ]
         }
       },

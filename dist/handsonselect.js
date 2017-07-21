@@ -1,246 +1,3 @@
-/// select2 plugin
-(function(Handsontable) {
-    "use strict";
-    var Select2Editor = Handsontable.editors.TextEditor.prototype.extend();
-    Select2Editor.prototype.prepare = function(row, col, prop, td, originalValue, cellProperties) {
-        Handsontable.editors.TextEditor.prototype.prepare.apply(this, arguments);
-        this.options = {
-            theme: "classic",
-            dropdownAutoWidth: true
-        };
-        if (this.cellProperties.options) {
-            this.options = $.extend(this.options, cellProperties.options);
-        }
-    };
-    Select2Editor.prototype.createElements = function() {
-        this.$body = $(document.body);
-        this.TEXTAREA = document.createElement("input");
-        this.TEXTAREA.setAttribute("type", "text");
-        this.$textarea = $(this.TEXTAREA);
-        Handsontable.Dom.addClass(this.TEXTAREA, "handsontableInput");
-        this.textareaStyle = this.TEXTAREA.style;
-        this.textareaStyle.width = 0;
-        this.textareaStyle.height = 0;
-        this.TEXTAREA_PARENT = document.createElement("DIV");
-        Handsontable.Dom.addClass(this.TEXTAREA_PARENT, "handsontableInputHolder");
-        this.textareaParentStyle = this.TEXTAREA_PARENT.style;
-        this.textareaParentStyle.top = 0;
-        this.textareaParentStyle.left = 0;
-        this.textareaParentStyle.display = "none";
-        this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
-        this.instance.rootElement.appendChild(this.TEXTAREA_PARENT);
-        var that = this;
-        this.instance._registerTimeout(setTimeout(function() {
-            that.refreshDimensions();
-        }, 0));
-    };
-    var onSelect2Changed = function() {
-        this.close();
-        this.finishEditing();
-    };
-    var onSelect2Closed = function() {
-        this.close();
-        this.finishEditing();
-    };
-    var onBeforeKeyDown = function(event) {
-        var instance = this;
-        var that = instance.getActiveEditor();
-        var keyCodes = Handsontable.helper.keyCode;
-        var ctrlDown = (event.ctrlKey || event.metaKey) && !event.altKey;
-        //catch CTRL but not right ALT (which in some systems triggers ALT+CTRL)
-        //Process only events that have been fired in the editor
-        if (event.target.className.indexOf("select2") === -1 || event.isImmediatePropagationStopped()) {
-            return;
-        }
-        if (event.keyCode === 17 || event.keyCode === 224 || event.keyCode === 91 || event.keyCode === 93) {
-            //when CTRL or its equivalent is pressed and cell is edited, don't prepare selectable text in textarea
-            event.stopImmediatePropagation();
-            return;
-        }
-        var target = event.target;
-        switch (event.keyCode) {
-          case keyCodes.ARROW_RIGHT:
-            if (Handsontable.Dom.getCaretPosition(target) !== target.value.length) {
-                event.stopImmediatePropagation();
-            } else {
-                that.$textarea.select2("close");
-            }
-            break;
-
-          case keyCodes.ARROW_LEFT:
-            if (Handsontable.Dom.getCaretPosition(target) !== 0) {
-                event.stopImmediatePropagation();
-            } else {
-                that.$textarea.select2("close");
-            }
-            break;
-
-          case keyCodes.ENTER:
-            var selected = that.instance.getSelected();
-            var isMultipleSelection = !(selected[0] === selected[2] && selected[1] === selected[3]);
-            if (ctrlDown && !isMultipleSelection || event.altKey) {
-                //if ctrl+enter or alt+enter, add new line
-                if (that.isOpened()) {
-                    that.val(that.val() + "\n");
-                    that.focus();
-                } else {
-                    that.beginEditing(that.originalValue + "\n");
-                }
-                event.stopImmediatePropagation();
-            }
-            event.preventDefault();
-            //don't add newline to field
-            break;
-
-          case keyCodes.A:
-          case keyCodes.X:
-          case keyCodes.C:
-          case keyCodes.V:
-            if (ctrlDown) {
-                event.stopImmediatePropagation();
-            }
-            break;
-
-          case keyCodes.BACKSPACE:
-          case keyCodes.DELETE:
-          case keyCodes.HOME:
-          case keyCodes.END:
-            event.stopImmediatePropagation();
-            //backspace, delete, home, end should only work locally when cell is edited (not in table context)
-            break;
-        }
-    };
-    Select2Editor.prototype.open = function(keyboardEvent) {
-        this.refreshDimensions();
-        this.textareaParentStyle.display = "block";
-        this.textareaParentStyle.zIndex = 2e4;
-        this.instance.addHook("beforeKeyDown", onBeforeKeyDown);
-        this.$textarea.css({
-            height: $(this.TD).height() + 4,
-            "min-width": $(this.TD).outerWidth() - 4
-        });
-        this.options.width = $(this.TD).outerWidth() + 1;
-        //display the list
-        this.$textarea.show();
-        var self = this;
-        var text = this.instance.getDataAtCell(this.row, this.col);
-        for (var i = 0; i < this.options.data.length; i++) {
-            if (this.options.data[i].text === text) {
-                text = this.options.data[i].id;
-                break;
-            }
-        }
-        this.$textarea.val(text);
-        this.$textarea.select2(this.options).on("change", onSelect2Changed.bind(this)).on("select2:close", onSelect2Closed.bind(this));
-        self.$textarea.select2("open");
-        var select2 = self.$textarea.data("select2");
-        select2.dropdown.$search.focus();
-    };
-    Select2Editor.prototype.init = function() {
-        Handsontable.editors.TextEditor.prototype.init.apply(this, arguments);
-    };
-    Select2Editor.prototype.close = function() {
-        this.instance.listen();
-        this.instance.removeHook("beforeKeyDown", onBeforeKeyDown);
-        if (this.$textarea.data("select2")) {
-            this.$textarea.select2("destroy");
-        }
-        this.$textarea.off();
-        this.$textarea.hide();
-        Handsontable.editors.TextEditor.prototype.close.apply(this, arguments);
-    };
-    Select2Editor.prototype.val = function(value) {
-        if (typeof value == "undefined") {
-            return this.$textarea.val();
-        } else {
-            this.$textarea.val(value);
-        }
-    };
-    Select2Editor.prototype.focus = function() {
-        this.instance.listen();
-    };
-    Select2Editor.prototype.beginEditing = function(initialValue) {
-        var onBeginEditing = this.instance.getSettings().onBeginEditing;
-        if (onBeginEditing && onBeginEditing() === false) {
-            return;
-        }
-        Handsontable.editors.TextEditor.prototype.beginEditing.apply(this, arguments);
-    };
-    Select2Editor.prototype.finishEditing = function(isCancelled, ctrlDown) {
-        this.instance.listen();
-        return Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
-    };
-    Handsontable.editors.Select2Editor = Select2Editor;
-    Handsontable.editors.registerEditor("select2", Select2Editor);
-})(Handsontable);
-
-/// select2 plugin
-(function(Handsontable) {
-    "use strict";
-    function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
-        if (cellProperties.options && cellProperties.options.data && value) {
-            if (typeof value === "string") {
-                value = value.trim();
-            }
-            for (var i = 0; i < cellProperties.options.data.length; i++) {
-                if (cellProperties.options.data[i].id == value) {
-                    if (typeof cellProperties.options.templateSelection === "function") {
-                        value = cellProperties.options.templateSelection(cellProperties.options[i], TD);
-                    } else {
-                        value = cellProperties.options.data[i].text;
-                    }
-                    break;
-                }
-            }
-        }
-        Handsontable.cellTypes.text.renderer(instance, TD, row, col, prop, value, cellProperties);
-    }
-    Handsontable.renderers.registerRenderer("select2", Select2Renderer);
-})(Handsontable);
-
-/// select2 plugin
-(function(Handsontable) {
-    "use strict";
-    /**
-     * Autocomplete cell validator.
-     *
-     * @private
-     * @validator AutocompleteValidator
-     * @param {*} value - Value of edited cell
-     * @param {Function} callback - Callback called with validation result
-     */
-    Handsontable.Select2Validator = function(value, callback) {
-        if (this.strict && this.options.data) {
-            if (value) {
-                if (typeof value === "string") {
-                    value = value.trim();
-                }
-                for (var i = 0; i < this.options.data.length; i++) {
-                    if (this.options.data[i] == value || this.options.data[i].id == value) {
-                        return callback(true);
-                    } else if (this.options.data[i].text == value) {
-                        return callback(true);
-                    }
-                }
-            }
-            callback(false);
-        } else {
-            callback(true);
-        }
-    };
-})(Handsontable);
-
-// registers select2 component as a field type
-(function(Handsontable) {
-    "use strict";
-    Handsontable.Select2Cell = {
-        editor: Handsontable.editors.Select2Editor,
-        renderer: Handsontable.renderers.getRenderer("select2"),
-        validator: Handsontable.Select2Validator
-    };
-    Handsontable.cellTypes.select2 = Handsontable.Select2Cell;
-})(Handsontable);
-
 /*!
  * Select2 4.0.3
  * https://select2.github.io
@@ -4940,3 +4697,283 @@
     // Return the Select2 instance for anyone who is importing it.
     return select2;
 });
+
+/// select2 plugin
+(function(Handsontable) {
+    "use strict";
+    var CustomData;
+    $.fn.select2.amd.require([ "select2/data/array", "select2/compat/inputData", "select2/utils" ], function(ArrayData, InputData, Utils) {
+        var pageSize = 20;
+        CustomData = function($element, options) {
+            var data = options.get("data") || [];
+            ArrayData.__super__.constructor.call(this, $element, options);
+            //this.addOptions(this.convertToOptions(data.slice(0, pageSize)));
+            this._currentData = data;
+        };
+        Utils.Extend(CustomData, ArrayData);
+        InputData.prototype.query = function(_, params, callback) {
+            var results = [];
+            for (var d = 0; d < this._currentData.length; d++) {
+                var data = this._currentData[d];
+                var matches = this.matches(params, data);
+                if (matches !== null) {
+                    results.push(matches);
+                }
+            }
+            callback({
+                results: results.slice(0, pageSize)
+            });
+        };
+    });
+    var Select2Editor = Handsontable.editors.TextEditor.prototype.extend();
+    Select2Editor.prototype.prepare = function(row, col, prop, td, originalValue, cellProperties) {
+        Handsontable.editors.TextEditor.prototype.prepare.apply(this, arguments);
+        this.options = {
+            theme: "classic",
+            dropdownAutoWidth: true,
+            // text for loading more results
+            formatLoadMore: "Loading more...",
+            dataAdapter: CustomData,
+            language: "fr"
+        };
+        if (this.cellProperties.options) {
+            this.options = $.extend(this.options, cellProperties.options);
+        }
+    };
+    Select2Editor.prototype.createElements = function() {
+        this.$body = $(document.body);
+        this.TEXTAREA = document.createElement("input");
+        this.TEXTAREA.setAttribute("type", "text");
+        this.$textarea = $(this.TEXTAREA);
+        this.$textarea.addClass("handsontableInput");
+        this.textareaStyle = this.TEXTAREA.style;
+        this.textareaStyle.width = 0;
+        this.textareaStyle.height = 0;
+        this.TEXTAREA_PARENT = document.createElement("DIV");
+        $(this.TEXTAREA_PARENT).addClass("handsontableInputHolder");
+        this.textareaParentStyle = this.TEXTAREA_PARENT.style;
+        this.textareaParentStyle.top = 0;
+        this.textareaParentStyle.left = 0;
+        this.textareaParentStyle.display = "none";
+        this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
+        this.instance.rootElement.appendChild(this.TEXTAREA_PARENT);
+        var that = this;
+        this.instance._registerTimeout(setTimeout(function() {
+            that.refreshDimensions();
+        }, 0));
+    };
+    var onSelect2Changed = function() {
+        this.close();
+        this.finishEditing();
+    };
+    var onSelect2Closed = function() {
+        this.close();
+        this.finishEditing();
+    };
+    var onBeforeKeyDown = function(event) {
+        var instance = this;
+        var that = instance.getActiveEditor();
+        var keyCodes = Handsontable.helper.keyCode;
+        var ctrlDown = (event.ctrlKey || event.metaKey) && !event.altKey;
+        //catch CTRL but not right ALT (which in some systems triggers ALT+CTRL)
+        //Process only events that have been fired in the editor
+        if (event.target.className.indexOf("select2") === -1) {
+            return;
+        }
+        if (event.keyCode === 17 || event.keyCode === 224 || event.keyCode === 91 || event.keyCode === 93) {
+            //when CTRL or its equivalent is pressed and cell is edited, don't prepare selectable text in textarea
+            event.stopImmediatePropagation();
+            return;
+        }
+        var target = event.target;
+        switch (event.keyCode) {
+          case 39:
+            if (Handsontable.Dom.getCaretPosition(target) !== target.value.length) {
+                event.stopImmediatePropagation();
+            } else {
+                that.$textarea.select2("close");
+            }
+            break;
+
+          case 40:
+            if (Handsontable.Dom.getCaretPosition(target) !== 0) {
+                event.stopImmediatePropagation();
+            } else {
+                that.$textarea.select2("close");
+            }
+            break;
+
+          case keyCodes.ENTER:
+            var selected = that.instance.getSelected();
+            var isMultipleSelection = !(selected[0] === selected[2] && selected[1] === selected[3]);
+            if (ctrlDown && !isMultipleSelection || event.altKey) {
+                //if ctrl+enter or alt+enter, add new line
+                if (that.isOpened()) {
+                    that.val(that.val() + "\n");
+                    that.focus();
+                } else {
+                    that.beginEditing(that.originalValue + "\n");
+                }
+                event.stopImmediatePropagation();
+            }
+            event.preventDefault();
+            //don't add newline to field
+            break;
+
+          case keyCodes.A:
+          case keyCodes.X:
+          case keyCodes.C:
+          case keyCodes.V:
+            if (ctrlDown) {
+                event.stopImmediatePropagation();
+            }
+            break;
+
+          case keyCodes.BACKSPACE:
+          case keyCodes.DELETE:
+          case keyCodes.HOME:
+          case keyCodes.END:
+            event.stopImmediatePropagation();
+            //backspace, delete, home, end should only work locally when cell is edited (not in table context)
+            break;
+        }
+    };
+    Select2Editor.prototype.open = function(keyboardEvent) {
+        this.refreshDimensions();
+        this.textareaParentStyle.display = "block";
+        this.textareaParentStyle.zIndex = 2e4;
+        this.instance.addHook("beforeKeyDown", onBeforeKeyDown);
+        this.$textarea.css({
+            height: $(this.TD).height() + 4,
+            "min-width": $(this.TD).outerWidth() - 4
+        });
+        this.options.width = $(this.TD).outerWidth() + 1;
+        //display the list
+        this.$textarea.show();
+        var self = this;
+        var text = this.instance.getDataAtCell(this.row, this.col);
+        var foundText = null;
+        for (var i = 0; i < this.options.data.length; i++) {
+            if (this.options.data[i].id == text) {
+                foundText = this.options.data[i].text;
+                break;
+            }
+        }
+        if (!foundText) {
+            foundText = "#ERR:" + text;
+        } else {
+            text = foundText;
+        }
+        this.$textarea.select2(this.options).on("change", onSelect2Changed.bind(this)).on("select2:close", onSelect2Closed.bind(this));
+        self.$textarea.select2("open");
+        var select2 = self.$textarea.data("select2");
+        select2.dropdown.$container.find(".select2-selection__rendered").text(foundText);
+        select2.dropdown.$search.val(text.substring(0, 3));
+        select2.dropdown.$search.focus();
+        select2.dropdown.$search.trigger("keydown");
+        select2.dropdown.$search.trigger("keypress");
+        select2.dropdown.$search.trigger("keyup");
+        select2.dropdown.$search.trigger("change");
+    };
+    Select2Editor.prototype.init = function() {
+        Handsontable.editors.TextEditor.prototype.init.apply(this, arguments);
+    };
+    Select2Editor.prototype.close = function() {
+        this.instance.listen();
+        this.instance.removeHook("beforeKeyDown", onBeforeKeyDown);
+        if (this.$textarea.data("select2")) {
+            this.$textarea.select2("destroy");
+        }
+        this.$textarea.off();
+        this.$textarea.hide();
+        Handsontable.editors.TextEditor.prototype.close.apply(this, arguments);
+    };
+    Select2Editor.prototype.val = function(value) {
+        if (typeof value == "undefined") {
+            return this.$textarea.val();
+        } else {
+            this.$textarea.val(value);
+        }
+    };
+    Select2Editor.prototype.focus = function() {
+        this.instance.listen();
+    };
+    Select2Editor.prototype.beginEditing = function(initialValue) {
+        var onBeginEditing = this.instance.getSettings().onBeginEditing;
+        if (onBeginEditing && onBeginEditing() === false) {
+            return;
+        }
+        Handsontable.editors.TextEditor.prototype.beginEditing.apply(this, arguments);
+    };
+    Select2Editor.prototype.finishEditing = function(isCancelled, ctrlDown) {
+        this.instance.listen();
+        return Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
+    };
+    Handsontable.Select2Editor = Select2Editor;
+})(Handsontable);
+
+/// select2 plugin
+(function(Handsontable) {
+    "use strict";
+    Handsontable.Select2Renderer = function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
+        if (cellProperties.options && cellProperties.options.data && value) {
+            if (typeof value === "string") {
+                value = value.trim();
+            }
+            for (var i = 0; i < cellProperties.options.data.length; i++) {
+                if (cellProperties.options.data[i].id == value) {
+                    if (typeof cellProperties.options.templateSelection === "function") {
+                        value = cellProperties.options.templateSelection(cellProperties.options[i], TD);
+                    } else {
+                        value = cellProperties.options.data[i].text;
+                    }
+                    break;
+                }
+            }
+        }
+        Handsontable.cellTypes.text.renderer(instance, TD, row, col, prop, value, cellProperties);
+    };
+})(Handsontable);
+
+/// select2 plugin
+(function(Handsontable) {
+    "use strict";
+    /**
+     * Autocomplete cell validator.
+     *
+     * @private
+     * @validator AutocompleteValidator
+     * @param {*} value - Value of edited cell
+     * @param {Function} callback - Callback called with validation result
+     */
+    Handsontable.Select2Validator = function(value, callback) {
+        if (this.options.data) {
+            if (value) {
+                if (typeof value === "string") {
+                    value = value.trim();
+                }
+                for (var i = 0; i < this.options.data.length; i++) {
+                    if (this.options.data[i] == value || this.options.data[i].id == value) {
+                        return callback(true);
+                    } else if (this.options.data[i].text == value) {
+                        return callback(true);
+                    }
+                }
+            }
+            callback(false);
+        } else {
+            callback(true);
+        }
+    };
+})(Handsontable);
+
+// registers select2 component as a field type
+(function(Handsontable) {
+    "use strict";
+    console.log("Ready for the show");
+    Handsontable.cellTypes.registerCellType("select2", {
+        editor: Handsontable.Select2Editor,
+        validator: Handsontable.Select2Validator,
+        renderer: Handsontable.Select2Renderer
+    });
+})(Handsontable);

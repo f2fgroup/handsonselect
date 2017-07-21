@@ -2,6 +2,36 @@
 (function (Handsontable) {
     "use strict";
 
+    var CustomData;
+
+    $.fn.select2.amd.require([
+      'select2/data/array',
+      'select2/compat/inputData',
+      'select2/utils'
+    ], function (ArrayData, InputData, Utils) {
+      var pageSize = 20;
+      CustomData = function($element, options) {
+        var data = options.get('data') || [];
+        ArrayData.__super__.constructor.call(this, $element, options);
+        //this.addOptions(this.convertToOptions(data.slice(0, pageSize)));
+        this._currentData = data;
+      };
+      Utils.Extend(CustomData, ArrayData);
+      InputData.prototype.query = function(_, params, callback) {
+          var results = [];
+          for (var d = 0; d < this._currentData.length; d++) {
+              var data = this._currentData[d];
+              var matches = this.matches(params, data);
+              if (matches !== null) {
+                  results.push(matches);
+              }
+          }
+          callback({
+              results: results.slice(0, pageSize)
+          });
+      };
+    });
+
     var Select2Editor = Handsontable.editors.TextEditor.prototype.extend();
 
     Select2Editor.prototype.prepare = function (row, col, prop, td, originalValue, cellProperties) {
@@ -10,7 +40,11 @@
 
         this.options = {
           theme: 'classic',
-          dropdownAutoWidth: true
+          dropdownAutoWidth: true,
+          // text for loading more results
+          formatLoadMore: 'Loading more...',
+          dataAdapter: CustomData,
+          language: 'fr'
         };
 
         if (this.cellProperties.options) {
@@ -24,15 +58,14 @@
         this.TEXTAREA = document.createElement('input');
         this.TEXTAREA.setAttribute('type', 'text');
         this.$textarea = $(this.TEXTAREA);
-
-        Handsontable.Dom.addClass(this.TEXTAREA, 'handsontableInput');
+        this.$textarea.addClass('handsontableInput');
 
         this.textareaStyle = this.TEXTAREA.style;
         this.textareaStyle.width = 0;
         this.textareaStyle.height = 0;
 
         this.TEXTAREA_PARENT = document.createElement('DIV');
-        Handsontable.Dom.addClass(this.TEXTAREA_PARENT, 'handsontableInputHolder');
+        $(this.TEXTAREA_PARENT).addClass('handsontableInputHolder');
 
         this.textareaParentStyle = this.TEXTAREA_PARENT.style;
         this.textareaParentStyle.top = 0;
@@ -66,7 +99,7 @@
 
 
         //Process only events that have been fired in the editor
-        if (event.target.className.indexOf('select2') === -1 || event.isImmediatePropagationStopped()) {
+        if (event.target.className.indexOf('select2') === -1) {
             return;
         }
         if (event.keyCode === 17 || event.keyCode === 224 || event.keyCode === 91 || event.keyCode === 93) {
@@ -78,7 +111,7 @@
         var target = event.target;
 
         switch (event.keyCode) {
-            case keyCodes.ARROW_RIGHT:
+            case 39:
                 if (Handsontable.Dom.getCaretPosition(target) !== target.value.length) {
                     event.stopImmediatePropagation();
                 } else {
@@ -86,7 +119,7 @@
                 }
                 break;
 
-            case keyCodes.ARROW_LEFT:
+            case 40:
                 if (Handsontable.Dom.getCaretPosition(target) !== 0) {
                     event.stopImmediatePropagation();
                 } else {
@@ -145,19 +178,30 @@
 
         var self = this;
         var text = this.instance.getDataAtCell(this.row, this.col);
+        var foundText = null;
         for(var i = 0; i < this.options.data.length; i++) {
-          if (this.options.data[i].text === text) {
-            text = this.options.data[i].id;
+          if (this.options.data[i].id == text) {
+            foundText = this.options.data[i].text;
             break;
           }
         }
-        this.$textarea.val(text);
+        if (!foundText) {
+          foundText = '#ERR:' + text;
+        } else {
+          text = foundText;
+        }
         this.$textarea.select2(this.options)
             .on('change', onSelect2Changed.bind(this))
             .on('select2:close', onSelect2Closed.bind(this));
         self.$textarea.select2('open');
         var select2 = self.$textarea.data('select2');
+        select2.dropdown.$container.find('.select2-selection__rendered').text(foundText);
+        select2.dropdown.$search.val(text.substring(0, 3));
         select2.dropdown.$search.focus();
+        select2.dropdown.$search.trigger('keydown');
+        select2.dropdown.$search.trigger('keypress');
+        select2.dropdown.$search.trigger('keyup');
+        select2.dropdown.$search.trigger('change');
     };
 
     Select2Editor.prototype.init = function () {
@@ -187,8 +231,9 @@
 
         this.instance.listen();
 
-        // DO NOT CALL THE BASE TEXTEDITOR FOCUS METHOD HERE, IT CAN MAKE THIS EDITOR BEHAVE POORLY AND HAS NO PURPOSE WITHIN THE CONTEXT OF THIS EDITOR
-        //Handsontable.editors.TextEditor.prototype.focus.apply(this, arguments);
+        // DO NOT CALL THE BASE TEXTEDITOR FOCUS METHOD HERE, IT CAN MAKE
+        // THIS EDITOR BEHAVE POORLY AND HAS NO PURPOSE WITHIN THE CONTEXT OF THIS EDITOR
+        // Handsontable.editors.TextEditor.prototype.focus.apply(this, arguments);
     };
 
     Select2Editor.prototype.beginEditing = function (initialValue) {
@@ -204,7 +249,6 @@
         return Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
     };
 
-    Handsontable.editors.Select2Editor = Select2Editor;
-    Handsontable.editors.registerEditor('select2', Select2Editor);
+    Handsontable.Select2Editor = Select2Editor;
 
 })(Handsontable);

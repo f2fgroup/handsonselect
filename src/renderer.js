@@ -1,7 +1,7 @@
 /// select2 plugin
 (function (Handsontable) {
     "use strict";
-    function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
+    Handsontable.Select2Renderer = function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
       if (cellProperties.options && cellProperties.options.data && value) {
         if (typeof value === "string") {
           value = value.trim();
@@ -18,6 +18,5 @@
         }
       }
       Handsontable.cellTypes.text.renderer(instance, TD, row, col, prop, value, cellProperties);
-    }
-    Handsontable.renderers.registerRenderer('select2', Select2Renderer);
+    };
 })(Handsontable);
