@@ -9,7 +9,7 @@
         for(var i = 0; i < cellProperties.options.data.length; i++) {
           if(cellProperties.options.data[i].id == value) {
             if (typeof cellProperties.options.templateSelection === 'function') {
-              value = cellProperties.options.templateSelection(cellProperties.options[i], TD);
+              value = cellProperties.options.templateSelection(cellProperties.options.data[i], TD);
             } else {
               value = cellProperties.options.data[i].text;
             }

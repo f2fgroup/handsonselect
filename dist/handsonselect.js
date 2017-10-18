@@ -4774,8 +4774,22 @@
         var instance = this;
         var that = instance.getActiveEditor();
         var keyCodes = Handsontable.helper.keyCode;
+        if (!keyCodes) {
+            keyCodes = {
+                ENTER: 13,
+                A: 65,
+                X: 0,
+                C: 0,
+                V: 0,
+                BACKSPACE: 0,
+                DELETE: 8,
+                HOME: 0,
+                END: 0
+            };
+        }
         var ctrlDown = (event.ctrlKey || event.metaKey) && !event.altKey;
         //catch CTRL but not right ALT (which in some systems triggers ALT+CTRL)
+        console.log("Keycode > ", event.keyCode);
         //Process only events that have been fired in the editor
         if (event.target.className.indexOf("select2") === -1) {
             return;
@@ -4788,19 +4802,8 @@
         var target = event.target;
         switch (event.keyCode) {
           case 39:
-            if (Handsontable.Dom.getCaretPosition(target) !== target.value.length) {
-                event.stopImmediatePropagation();
-            } else {
-                that.$textarea.select2("close");
-            }
-            break;
-
           case 40:
-            if (Handsontable.Dom.getCaretPosition(target) !== 0) {
-                event.stopImmediatePropagation();
-            } else {
-                that.$textarea.select2("close");
-            }
+            event.stopImmediatePropagation();
             break;
 
           case keyCodes.ENTER:
@@ -4859,16 +4862,24 @@
                 break;
             }
         }
-        if (!foundText) {
-            foundText = "#ERR:" + text;
+        this.$textarea.data("initial", foundText ? foundText : text);
+        if (keyboardEvent && keyboardEvent.key.length === 1) {
+            if (!foundText) {
+                foundText = "#ERR:" + text;
+            }
+            text = keyboardEvent.key;
         } else {
-            text = foundText;
+            if (!foundText) {
+                foundText = "#ERR:" + text;
+            } else {
+                text = foundText;
+            }
         }
         this.$textarea.select2(this.options).on("change", onSelect2Changed.bind(this)).on("select2:close", onSelect2Closed.bind(this));
         self.$textarea.select2("open");
         var select2 = self.$textarea.data("select2");
         select2.dropdown.$container.find(".select2-selection__rendered").text(foundText);
-        select2.dropdown.$search.val(text.substring(0, 3));
+        select2.dropdown.$search.val(text ? text.substring(0, text.length > 6 ? text.length - 3 : text.length) : "");
         select2.dropdown.$search.focus();
         select2.dropdown.$search.trigger("keydown");
         select2.dropdown.$search.trigger("keypress");
@@ -4907,6 +4918,9 @@
     };
     Select2Editor.prototype.finishEditing = function(isCancelled, ctrlDown) {
         this.instance.listen();
+        if (isCancelled) {
+            this.$textarea.val(this.$textarea.data("initial"));
+        }
         return Handsontable.editors.TextEditor.prototype.finishEditing.apply(this, arguments);
     };
     Handsontable.Select2Editor = Select2Editor;
@@ -4923,7 +4937,7 @@
             for (var i = 0; i < cellProperties.options.data.length; i++) {
                 if (cellProperties.options.data[i].id == value) {
                     if (typeof cellProperties.options.templateSelection === "function") {
-                        value = cellProperties.options.templateSelection(cellProperties.options[i], TD);
+                        value = cellProperties.options.templateSelection(cellProperties.options.data[i], TD);
                     } else {
                         value = cellProperties.options.data[i].text;
                     }
