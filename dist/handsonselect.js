@@ -4980,7 +4980,8 @@
                 return callback(false);
             } else {
                 // the value is empty
-                var col = context.editor.datagrid.column(this.instance, this.col);
+                var settings = this.instance.getSettings();
+                var col = settings.columns[this.col];
                 if (col.mandatory) {
                     callback(false);
                 } else {
