@@ -29,7 +29,8 @@
           return callback(false);
         } else {
           // the value is empty
-          if (this.options.mandatory) {
+          var col = context.editor.datagrid.column(this.instance, this.col);
+          if (col.mandatory) {
             callback(false);
           } else {
             callback(true);
