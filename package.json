@@ -1,5 +1,5 @@
 {
-  "name": "handsonSelect",
+  "name": "f2f-handsonselect",
   "version": "1.0.0",
   "description": "Handsontable customisable select component",
   "main": "./dist/handsonselect.js",

@@ -11,7 +11,7 @@
     ], function (ArrayData, InputData, Utils) {
       var pageSize = 20;
       CustomData = function($element, options) {
-        var data = options.get('data') || [];
+        var data = options.get('_references') || [];
         ArrayData.__super__.constructor.call(this, $element, options);
         //this.addOptions(this.convertToOptions(data.slice(0, pageSize)));
         this._currentData = data;
@@ -180,9 +180,10 @@
         var self = this;
         var text = this.instance.getDataAtCell(this.row, this.col);
         var foundText = null;
-        for(var i = 0; i < this.options.data.length; i++) {
-          if (this.options.data[i].id == text) {
-            foundText = this.options.data[i].text;
+        var refs = this.columnOptions._references;
+        for(var i = 0; i < refs.length; i++) {
+          if (refs[i].id == text) {
+            foundText = refs[i].text;
             break;
           }
         }
@@ -199,7 +200,7 @@
             text = foundText;
           }
         }
-        this.$textarea.select2(this.options)
+        this.$textarea.select2(Object.clone({}, this.options, { _references: ref }))
             .on('change', onSelect2Changed.bind(this))
             .on('select2:close', onSelect2Closed.bind(this));
         self.$textarea.select2('open');
