@@ -14,13 +14,13 @@
         var data = options.get('_references') || [];
         ArrayData.__super__.constructor.call(this, $element, options);
         //this.addOptions(this.convertToOptions(data.slice(0, pageSize)));
-        this._currentData = data;
+        this._dataToConvert = data;
       };
       Utils.Extend(CustomData, ArrayData);
       InputData.prototype.query = function(_, params, callback) {
           var results = [];
-          for (var d = 0; d < this._currentData.length; d++) {
-              var data = this._currentData[d];
+          for (var d = 0; d < this._dataToConvert.length; d++) {
+              var data = this._dataToConvert[d];
               var matches = this.matches(params, data);
               if (matches !== null) {
                   results.push(matches);
@@ -180,7 +180,7 @@
         var self = this;
         var text = this.instance.getDataAtCell(this.row, this.col);
         var foundText = null;
-        var refs = this.columnOptions._references;
+        var refs = this.cellProperties._references;
         for(var i = 0; i < refs.length; i++) {
           if (refs[i].id == text) {
             foundText = refs[i].text;
@@ -200,7 +200,7 @@
             text = foundText;
           }
         }
-        this.$textarea.select2(Object.clone({}, this.options, { _references: ref }))
+        this.$textarea.select2(Object.assign({}, this.options, { _references: refs }))
             .on('change', onSelect2Changed.bind(this))
             .on('select2:close', onSelect2Closed.bind(this));
         self.$textarea.select2('open');

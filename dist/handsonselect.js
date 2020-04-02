@@ -4997,16 +4997,16 @@
     $.fn.select2.amd.require([ "select2/data/array", "select2/compat/inputData", "select2/utils" ], function(ArrayData, InputData, Utils) {
         var pageSize = 20;
         CustomData = function($element, options) {
-            var data = options.get("data") || [];
+            var data = options.get("_references") || [];
             ArrayData.__super__.constructor.call(this, $element, options);
             //this.addOptions(this.convertToOptions(data.slice(0, pageSize)));
-            this._currentData = data;
+            this._dataToConvert = data;
         };
         Utils.Extend(CustomData, ArrayData);
         InputData.prototype.query = function(_, params, callback) {
             var results = [];
-            for (var d = 0; d < this._currentData.length; d++) {
-                var data = this._currentData[d];
+            for (var d = 0; d < this._dataToConvert.length; d++) {
+                var data = this._dataToConvert[d];
                 var matches = this.matches(params, data);
                 if (matches !== null) {
                     results.push(matches);
@@ -5148,9 +5148,10 @@
         var self = this;
         var text = this.instance.getDataAtCell(this.row, this.col);
         var foundText = null;
-        for (var i = 0; i < this.options.data.length; i++) {
-            if (this.options.data[i].id == text) {
-                foundText = this.options.data[i].text;
+        var refs = this.cellProperties._references;
+        for (var i = 0; i < refs.length; i++) {
+            if (refs[i].id == text) {
+                foundText = refs[i].text;
                 break;
             }
         }
@@ -5167,7 +5168,9 @@
                 text = foundText;
             }
         }
-        this.$textarea.select2(this.options).on("change", onSelect2Changed.bind(this)).on("select2:close", onSelect2Closed.bind(this));
+        this.$textarea.select2(Object.assign({}, this.options, {
+            _references: refs
+        })).on("change", onSelect2Changed.bind(this)).on("select2:close", onSelect2Closed.bind(this));
         self.$textarea.select2("open");
         var select2 = self.$textarea.data("select2");
         select2.dropdown.$container.find(".select2-selection__rendered").text(foundText);
@@ -5222,18 +5225,21 @@
 (function(Handsontable) {
     "use strict";
     Handsontable.Select2Renderer = function Select2Renderer(instance, TD, row, col, prop, value, cellProperties) {
-        if (cellProperties.options && cellProperties.options.data && value) {
+        if (value) {
             if (typeof value === "string") {
                 value = value.trim();
             }
-            for (var i = 0; i < cellProperties.options.data.length; i++) {
-                if (cellProperties.options.data[i].id == value) {
-                    if (typeof cellProperties.options.templateSelection === "function") {
-                        value = cellProperties.options.templateSelection(cellProperties.options.data[i], TD);
-                    } else {
-                        value = cellProperties.options.data[i].text;
+            var settings = instance.getSettings().columns[col];
+            if (settings._references && settings._references.length > 0) {
+                for (var i = 0; i < settings._references.length; i++) {
+                    if (settings._references[i].id == value) {
+                        if (typeof cellProperties.options.templateSelection === "function") {
+                            value = cellProperties.options.templateSelection(settings._references[i], TD);
+                        } else {
+                            value = settings._references[i].text;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -5253,17 +5259,17 @@
      * @param {Function} callback - Callback called with validation result
      */
     Handsontable.Select2Validator = function(value, callback) {
-        if (this.options.data) {
+        if (this._references) {
             if (value) {
                 if (typeof value === "string") {
                     value = value.trim();
                 }
                 // scan each entry of the datasource
-                for (var i = 0; i < this.options.data.length; i++) {
-                    if (this.options.data[i] == value || this.options.data[i].id == value) {
+                for (var i = 0; i < this._references.length; i++) {
+                    if (this._references[i] == value || this._references[i].id == value) {
                         // found by id
                         return callback(true);
-                    } else if (this.options.data[i].text == value) {
+                    } else if (this._references[i].text == value) {
                         // found by text
                         return callback(true);
                     }

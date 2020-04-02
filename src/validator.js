@@ -17,7 +17,7 @@
           }
           // scan each entry of the datasource
           for(var i = 0; i <  this._references.length; i++) {
-            if (this._references[i] == value || this._references.id == value) {
+            if (this._references[i] == value || this._references[i].id == value) {
               // found by id
               return callback(true);
             } else if (this._references[i].text == value) {
